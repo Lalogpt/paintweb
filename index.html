@@ -21,8 +21,11 @@ header{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .row{display:flex;gap:8px;align-items:center}
 .pill{background:var(--ac);border:0;color:#fff;padding:9px 15px;border-radius:999px;font:500 .8rem inherit;font-family:inherit;cursor:pointer;display:flex;gap:6px;align-items:center;box-shadow:0 4px 14px var(--glow)}
 .pill.alt{background:rgba(255,255,255,.1);box-shadow:none}
-.bar{display:flex;gap:8px;align-items:center;padding:10px 12px;border-radius:20px;max-width:980px;margin:0 auto;overflow-x:auto;scrollbar-width:none}
-.bar::-webkit-scrollbar{display:none}
+.dock{display:flex;flex-direction:column;gap:8px;align-items:center;width:100%;max-width:980px;margin:0 auto}
+.bar{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 8px;align-items:center;padding:12px;border-radius:20px;width:100%;max-height:min(55vh,420px);overflow-y:auto}
+.bar.hide{display:none}
+.mini{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:999px}
+.tg{width:auto;padding:0 14px;gap:6px;font:500 .8rem inherit;font-family:inherit}
 .g{display:flex;align-items:center;gap:6px;flex:none}
 .dv{width:1px;height:24px;background:var(--line);flex:none}
 .ib{flex:none;width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s}
@@ -39,7 +42,8 @@ input[type=range]{-webkit-appearance:none;appearance:none;width:80px;height:4px;
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--glow)}
 #toast{position:fixed;top:calc(env(safe-area-inset-top,0px) + 66px);left:50%;transform:translate(-50%,-8px);background:rgba(0,0,0,.85);border:1px solid var(--line);padding:8px 18px;border-radius:999px;font-size:.8rem;opacity:0;transition:.3s;pointer-events:none;z-index:50}
 #toast.show{opacity:1;transform:translate(-50%,0)}
-@media(max-width:640px){.badge small{display:none}.pill span{display:none}}
+.g{max-width:100%}
+@media(max-width:640px){.badge small{display:none}.pill span{display:none}.dv{display:none}.g{flex-wrap:wrap;justify-content:center}}
 </style>
 </head>
 <body>
@@ -57,7 +61,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     </div>
   </header>
 
-  <div class="glass bar">
+  <div class="dock">
+  <div class="glass bar" id="bar">
     <div class="g">
       <select id="bgsel" title="Fondo del lienzo">
         <option value="white">Lienzo blanco</option>
@@ -76,13 +81,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     <div class="dv"></div>
     <div class="sl" title="Tamaño ( [ y ] )"><i data-lucide="circle" style="width:8px;height:8px"></i><input type="range" id="size" min="1" max="80" value="8"><i data-lucide="circle" style="width:16px;height:16px"></i></div>
     <div class="sl" title="Opacidad"><i data-lucide="droplet" style="width:14px;height:14px"></i><input type="range" id="op" min="0.05" max="1" step="0.05" value="1"></div>
-    <div class="dv"></div>
-    <div class="g">
-      <button class="ib" id="sym" title="Simetría espejo (X)"><i data-lucide="flip-horizontal" style="width:18px;height:18px"></i></button>
-      <button class="ib" id="undo" title="Deshacer (Ctrl+Z)"><i data-lucide="undo" style="width:18px;height:18px"></i></button>
-      <button class="ib" id="redo" title="Rehacer (Ctrl+Y)"><i data-lucide="redo" style="width:18px;height:18px"></i></button>
-      <button class="ib" id="clear" title="Limpiar lienzo"><i data-lucide="trash-2" style="width:18px;height:18px"></i></button>
-    </div>
+  </div>
+  <div class="glass mini">
+    <button class="ib tg" id="tog" title="Mostrar u ocultar herramientas"></button>
+    <button class="ib" id="sym" title="Simetría espejo (X)"><i data-lucide="flip-horizontal" style="width:18px;height:18px"></i></button>
+    <button class="ib" id="undo" title="Deshacer (Ctrl+Z)"><i data-lucide="undo" style="width:18px;height:18px"></i></button>
+    <button class="ib" id="redo" title="Rehacer (Ctrl+Y)"><i data-lucide="redo" style="width:18px;height:18px"></i></button>
+    <button class="ib" id="clear" title="Limpiar lienzo"><i data-lucide="trash-2" style="width:18px;height:18px"></i></button>
+  </div>
   </div>
 </div>
 
@@ -277,6 +283,16 @@ addEventListener('keydown',e=>{
     else if(k==='['||k===']'){S.size=Math.min(80,Math.max(1,S.size+(k===']'?3:-3)));$('size').value=S.size;updCur()}
   }
 });
+// Panel plegable: en teléfono empieza oculto y se cierra solo al dibujar
+const bar=$('bar'),tog=$('tog');
+function setBar(open){
+  bar.classList.toggle('hide',!open);
+  tog.innerHTML=`<i data-lucide="${open?'chevron-down':'sliders-horizontal'}" style="width:18px;height:18px"></i><span>${open?'Ocultar':'Herramientas'}</span>`;
+  try{lucide.createIcons()}catch(e){}
+}
+tog.onclick=()=>setBar(bar.classList.contains('hide'));
+pCv.addEventListener('pointerdown',()=>{if(innerWidth<640&&!bar.classList.contains('hide'))setBar(false)});
+setBar(innerWidth>=640);
 addEventListener('resize',resize);
 resize();updCur();btns();
 toast('¡Bienvenido a tu Estudio de Arte!');
